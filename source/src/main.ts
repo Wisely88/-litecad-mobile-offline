@@ -1,70 +1,14 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-import './style.css'
-import { i18n } from '@mlightcad/cad-viewer'
-import { registerLibreDwgConverter } from './registerLibreDwg'
-
 const isIOS =
   /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
 
-// iPhone DWG uses the dedicated low-memory SVG worker instead.
-// Keep the full MLightCAD DWG converter for desktop/non-iOS.
-if (!isIOS) {
-  registerLibreDwgConverter()
-}
+document.documentElement.dataset.litecadRuntime = isIOS ? 'ios-lite' : 'desktop'
 
-const app = createApp(App)
-app.use(ElementPlus)
-app.use(i18n)
-app.mount('#app')
-
-async function prepareOffline() {
-  if (!('serviceWorker' in navigator)) {
-    window.dispatchEvent(new CustomEvent('litecad:offline-state', { detail: 'unsupported' }))
-    return
+const boot = isIOS ? import('./mobile') : import('./desktop')
+boot.catch(error => {
+  console.error('[LiteCAD] bootstrap failed', error)
+  const app = document.getElementById('app')
+  if (app) {
+    app.innerHTML = '<div style="padding:32px;font-family:-apple-system;color:#ff8f86;background:#07111d;min-height:100vh">LiteCAD 启动失败，请重新载入页面。</div>'
   }
-
-  try {
-    await navigator.serviceWorker.register('./sw.js', { scope: './' })
-    await navigator.serviceWorker.ready
-
-    const assets = [
-      './assets/app.js',
-      './assets/app.css',
-      './assets/mtext-renderer-worker.js',
-      './assets/ios/ios-dwg-worker.js',
-      './assets/ios/libredwg-lowmem.js',
-      './assets/ios/libredwg-runtime.js',
-      './assets/ios/libredwg-web.wasm'
-    ]
-
-    if (!isIOS) {
-      assets.push(
-        './assets/libredwg-parser-worker.js',
-        './assets/libredwg-web.wasm'
-      )
-    }
-
-    await Promise.all(
-      assets.map(async url => {
-        const response = await fetch(url, { cache: 'reload' })
-        if (!response.ok) throw new Error(url + ': ' + response.status)
-        await response.arrayBuffer()
-      })
-    )
-
-    localStorage.setItem('litecad-offline-ready-v5', '1')
-    window.dispatchEvent(new CustomEvent('litecad:offline-state', { detail: 'ready' }))
-  } catch (error) {
-    console.warn('[LiteCAD] offline preparation failed', error)
-    const ready = localStorage.getItem('litecad-offline-ready-v5') === '1'
-    window.dispatchEvent(
-      new CustomEvent('litecad:offline-state', { detail: ready ? 'ready' : 'failed' })
-    )
-  }
-}
-
-window.addEventListener('load', () => void prepareOffline())
+})
