@@ -6,7 +6,15 @@ import './style.css'
 import { i18n } from '@mlightcad/cad-viewer'
 import { registerLibreDwgConverter } from './registerLibreDwg'
 
-registerLibreDwgConverter()
+const isIOS =
+  /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+
+// iPhone DWG uses the dedicated low-memory SVG worker instead.
+// Keep the full MLightCAD DWG converter for desktop/non-iOS.
+if (!isIOS) {
+  registerLibreDwgConverter()
+}
 
 const app = createApp(App)
 app.use(ElementPlus)
@@ -27,9 +35,17 @@ async function prepareOffline() {
       './assets/app.js',
       './assets/app.css',
       './assets/mtext-renderer-worker.js',
-      './assets/libredwg-parser-worker.js',
-      './assets/libredwg-web.wasm'
+      './assets/ios/ios-dwg-worker.js',
+      './assets/ios/libredwg-lowmem.js',
+      './assets/ios/libredwg-web.wasm'
     ]
+
+    if (!isIOS) {
+      assets.push(
+        './assets/libredwg-parser-worker.js',
+        './assets/libredwg-web.wasm'
+      )
+    }
 
     await Promise.all(
       assets.map(async url => {
@@ -39,11 +55,11 @@ async function prepareOffline() {
       })
     )
 
-    localStorage.setItem('litecad-offline-ready', '1')
+    localStorage.setItem('litecad-offline-ready-v5', '1')
     window.dispatchEvent(new CustomEvent('litecad:offline-state', { detail: 'ready' }))
   } catch (error) {
     console.warn('[LiteCAD] offline preparation failed', error)
-    const ready = localStorage.getItem('litecad-offline-ready') === '1'
+    const ready = localStorage.getItem('litecad-offline-ready-v5') === '1'
     window.dispatchEvent(
       new CustomEvent('litecad:offline-state', { detail: ready ? 'ready' : 'failed' })
     )
