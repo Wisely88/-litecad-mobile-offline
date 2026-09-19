@@ -56,6 +56,11 @@ jobs:
           sed -i 's/LiteCAD v7/LiteCAD v8/g' dist/v8/index.html dist/v8/manifest.webmanifest || true
           sed -i 's/litecad-v7-/litecad-v8-/g; s/litecad-v7-ready/litecad-v8-ready/g' dist/v8/v7.js
 
+          # v9: block-instanced renderer + robust main-content fit + touch gestures.
+          rm -rf dist/v9
+          cp -a dist/v7 dist/v9
+          sed -i 's/LiteCAD v7/LiteCAD v9/g' dist/v9/index.html dist/v9/manifest.webmanifest || true
+
       - name: Put production build at branch root
         shell: bash
         run: |
