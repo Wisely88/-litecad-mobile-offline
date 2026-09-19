@@ -1,0 +1,10 @@
+LiteCAD iOS low-memory LibreDWG engine
+Upstream: https://github.com/mlightcad/libredwg-web
+Commit: 1dd682f46339f37b67c5ff1085d10d04a8c16d7e
+License: GPL-3.0
+INITIAL_MEMORY: 128 MiB
+ALLOW_MEMORY_GROWTH: 1
+MEMORY_GROWTH_LINEAR_STEP: 64 MiB
+MAXIMUM_MEMORY: 1536 MiB
+
+Integration: iOS DWG -> low-memory Worker -> SVG -> main thread
