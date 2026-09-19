@@ -1,4 +1,4 @@
-const CACHE = 'litecad-mobile-v4-1-20260919'
+const CACHE = 'litecad-mobile-v5-lowmem-20260919'
 const CORE = [
   './',
   './index.html',
@@ -8,7 +8,10 @@ const CORE = [
   './assets/app.css',
   './assets/mtext-renderer-worker.js',
   './assets/libredwg-parser-worker.js',
-  './assets/libredwg-web.wasm'
+  './assets/libredwg-web.wasm',
+  './assets/ios/ios-dwg-worker.js',
+  './assets/ios/libredwg-lowmem.js',
+  './assets/ios/libredwg-web.wasm'
 ]
 
 self.addEventListener('install', event => {
