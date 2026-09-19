@@ -249,7 +249,6 @@ function buildDef(entities, blockMap) {
   const insertGroups = new Map()
 
   for (const entity of entities || []) {
-    if (truncated) break
     if (!entity) continue
     sourceEntities++
 
@@ -494,29 +493,67 @@ self.onmessage = async event => {
       if (block?.name) blockMap.set(block.name, block)
     }
 
-    progress('definitions', blockEntries.length + ' 个块定义')
+    // Model space must be parsed first. Large DWG files can contain many
+    // unused block definitions; parsing those first used to consume the
+    // geometry budget and incorrectly leave model space empty.
+    progress(
+      'model-first',
+      (database?.entities?.length || 0).toLocaleString() + ' 个模型空间实体'
+    )
+
+    const root = buildDef(database?.entities || [], blockMap)
     const defs = new Map()
 
-    for (let i = 0; i < blockEntries.length; i++) {
-      const block = blockEntries[i]
-      if (!block?.name) continue
-      defs.set(block.name, buildDef(block.entities || [], blockMap))
-      if (i % 250 === 0) {
-        progress(
-          'definitions',
-          (i + 1) + '/' + blockEntries.length +
-            ' 块 · ' + uniqueSegments.toLocaleString() + ' 基础线段'
-        )
+    // Only build blocks actually reachable from model-space INSERTs.
+    const queue = []
+    const queued = new Set()
+
+    for (const group of root.groups) {
+      if (group?.name && !queued.has(group.name)) {
+        queued.add(group.name)
+        queue.push(group.name)
       }
-      if (truncated) break
     }
 
+    let qIndex = 0
+    while (qIndex < queue.length) {
+      const name = queue[qIndex++]
+      if (defs.has(name)) continue
+
+      const block = blockMap.get(name)
+      if (!block) {
+        skippedCount++
+        continue
+      }
+
+      const def = buildDef(block.entities || [], blockMap)
+      defs.set(name, def)
+
+      for (const group of def.groups) {
+        if (group?.name && !queued.has(group.name)) {
+          queued.add(group.name)
+          queue.push(group.name)
+        }
+      }
+
+      if (qIndex % 100 === 0 || qIndex === queue.length) {
+        progress(
+          'definitions',
+          qIndex + '/' + queue.length +
+            ' 已引用块 · ' +
+            uniqueSegments.toLocaleString() + ' 唯一基础线段'
+        )
+      }
+    }
+
+    // Resolve nested block extents only after the reachable graph is built.
     for (const name of defs.keys()) {
       computeDefBBox(name, defs)
     }
 
-    const root = buildDef(database?.entities || [], blockMap)
-    root.bbox = bboxValid(root.geometryBBox) ? { ...root.geometryBBox } : emptyBBox()
+    root.bbox = bboxValid(root.geometryBBox)
+      ? { ...root.geometryBBox }
+      : emptyBBox()
 
     for (const group of root.groups) {
       const child = defs.get(group.name)
