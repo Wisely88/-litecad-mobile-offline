@@ -1,0 +1,106 @@
+name: Build iOS low-memory LibreDWG engine
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-ios-lowmem-engine.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout LiteCAD
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install native build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y             autoconf automake autopoint libtool libtool-bin pkg-config gettext             make gperf bison flex python3
+
+      - name: Install Emscripten
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          cd "$RUNNER_TEMP/emsdk"
+          ./emsdk install latest
+          ./emsdk activate latest
+
+      - name: Build LibreDWG with low initial memory
+        shell: bash
+        run: |
+          set -euo pipefail
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          corepack enable
+          corepack prepare pnpm@9.15.4 --activate
+
+          git clone https://github.com/mlightcad/libredwg-web.git "$RUNNER_TEMP/libredwg-web"
+          cd "$RUNNER_TEMP/libredwg-web"
+          git checkout 1dd682f46339f37b67c5ff1085d10d04a8c16d7e
+
+          ./autogen.sh
+          cd bindings/javascript
+          pnpm install --no-frozen-lockfile
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("package.json")
+          s = p.read_text()
+          old = "-s ALLOW_MEMORY_GROWTH=1 -s INITIAL_MEMORY=1GB -s MAXIMUM_MEMORY=4GB"
+          new = (
+              "-s ALLOW_MEMORY_GROWTH=1 "
+              "-s INITIAL_MEMORY=134217728 "
+              "-s MAXIMUM_MEMORY=1610612736 "
+              "-s MEMORY_GROWTH_LINEAR_STEP=67108864 "
+              "-s MEMORY_GROWTH_GEOMETRIC_STEP=0"
+          )
+          if old not in s:
+              raise SystemExit("Expected LibreDWG memory flags were not found")
+          p.write_text(s.replace(old, new))
+          PY
+
+          pnpm build:prepare
+          pnpm build:obj
+          pnpm build:wasm
+          pnpm copy
+          pnpm build
+
+          mkdir -p "$GITHUB_WORKSPACE/source/public/assets/ios"
+          cp dist/libredwg-web.js "$GITHUB_WORKSPACE/source/public/assets/ios/libredwg-lowmem.js"
+          cp wasm/libredwg-web.wasm "$GITHUB_WORKSPACE/source/public/assets/ios/libredwg-web.wasm"
+
+          cat > "$GITHUB_WORKSPACE/source/public/assets/ios/ENGINE_BUILD.txt" <<'TXT'
+          LiteCAD iOS low-memory LibreDWG engine
+          Upstream: https://github.com/mlightcad/libredwg-web
+          Commit: 1dd682f46339f37b67c5ff1085d10d04a8c16d7e
+          License: GPL-3.0
+          INITIAL_MEMORY: 128 MiB
+          ALLOW_MEMORY_GROWTH: 1
+          MEMORY_GROWTH_LINEAR_STEP: 64 MiB
+          MAXIMUM_MEMORY: 1536 MiB
+          TXT
+
+          ls -lh "$GITHUB_WORKSPACE/source/public/assets/ios"
+
+      - name: Commit low-memory engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add source/public/assets/ios/libredwg-lowmem.js
+          git add source/public/assets/ios/libredwg-web.wasm
+          git add source/public/assets/ios/ENGINE_BUILD.txt
+          if git diff --cached --quiet; then
+            echo "Low-memory engine is already current."
+            exit 0
+          fi
+          git commit -m "Add iOS low-memory LibreDWG engine"
+          git push origin HEAD:main
