@@ -42,6 +42,13 @@ jobs:
           npm install --no-audit --no-fund
           npm run build
 
+          # v7 safe boot keeps its low-memory DWG runtime in the same scope.
+          mkdir -p dist/v7/engine
+          cp public/assets/ios/ios-dwg-worker.js dist/v7/engine/ios-dwg-worker.js
+          cp public/assets/ios/libredwg-lowmem.js dist/v7/engine/libredwg-lowmem.js
+          cp public/assets/ios/libredwg-runtime.js dist/v7/engine/libredwg-runtime.js
+          cp public/assets/ios/libredwg-web.wasm dist/v7/engine/libredwg-web.wasm
+
       - name: Put production build at branch root
         shell: bash
         run: |
