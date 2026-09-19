@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#07111d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LiteCAD">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="../icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./v7.css">
+  <title>LiteCAD v9 · 安全启动</title>
+</head>
+<body>
+  <main id="app">
+    <section id="home" class="home">
+      <div class="brand">
+        <div class="logo">⌗</div>
+        <div>
+          <h1>LiteCAD v9</h1>
+          <p>iPhone 安全启动 · DWG / DXF</p>
+        </div>
+      </div>
+
+      <div id="bootCard" class="status ready">
+        <span class="dot"></span>
+        <div>
+          <strong>轻量页面已启动</strong>
+          <p>当前没有加载 WASM、CAD Viewer 或 DWG 文件。</p>
+        </div>
+      </div>
+
+      <div id="engineCard" class="card">
+        <h2>① 准备离线 DWG 引擎</h2>
+        <p id="engineText">第一次联网时点一次。引擎会按顺序缓存，不会在首页同时加载两份。</p>
+        <button id="prepareBtn" class="primary">准备离线引擎</button>
+        <div id="progress" class="progress" hidden>
+          <div class="bar"><span id="barFill"></span></div>
+          <p id="progressText">准备中…</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>② 打开图纸</h2>
+        <p>DWG 只在低内存 Worker 中解析；文件不会上传。</p>
+        <input id="fileInput" type="file" hidden>
+        <button id="openBtn" class="primary secondary">选择 DWG / DXF</button>
+      </div>
+
+      <div id="errorBox" class="error" hidden></div>
+
+      <div class="note">
+        <strong>这一版专门解决“打开网页就崩”</strong>
+        <p>页面首次打开不会注册带预缓存任务的 Service Worker，也不会下载 10MB WASM。先验证启动稳定，再手动准备离线引擎。</p>
+      </div>
+    </section>
+
+    <section id="viewer" class="viewer" hidden>
+      <header class="toolbar">
+        <button id="backBtn">‹ 换图</button>
+        <div id="fileName" class="filename"></div>
+        <div id="zoomTools" class="zoom">
+          <button id="zoomOut">−</button>
+          <span id="zoomValue">100%</span>
+          <button id="zoomIn">＋</button>
+          <button id="fitBtn">主体</button><button id="fullBtn">全图</button>
+        </div>
+      </header>
+      <div id="stage" class="stage">
+        <div id="message" class="message">
+          <div id="spinner" class="spinner"></div>
+          <strong id="messageTitle">准备中…</strong>
+          <p id="messageText"></p>
+        </div>
+        <canvas id="cadCanvas" class="drawing" hidden aria-label="DWG drawing"></canvas>
+      </div>
+    </section>
+  </main>
+  <script src="./v7.js" defer></script>
+</body>
+</html>
