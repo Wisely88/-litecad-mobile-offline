@@ -8,3 +8,5 @@ MEMORY_GROWTH_LINEAR_STEP: 64 MiB
 MAXIMUM_MEMORY: 1536 MiB
 
 Runtime glue: libredwg-runtime.js (bundled beside wrapper/WASM)
+
+LiteCAD shell: v6 split bootstrap + isolated service-worker scope
