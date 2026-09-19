@@ -61,6 +61,13 @@ jobs:
           cp -a dist/v7 dist/v9
           sed -i 's/LiteCAD v7/LiteCAD v9/g' dist/v9/index.html dist/v9/manifest.webmanifest || true
 
+          # v10: model-space-first parser; only reachable block definitions
+          # are loaded, preventing unused block libraries from exhausting
+          # the unique-geometry budget before model space is processed.
+          rm -rf dist/v10
+          cp -a dist/v7 dist/v10
+          sed -i 's/LiteCAD v7/LiteCAD v10/g' dist/v10/index.html dist/v10/manifest.webmanifest || true
+
       - name: Put production build at branch root
         shell: bash
         run: |
