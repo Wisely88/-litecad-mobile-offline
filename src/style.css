@@ -1,0 +1,70 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", system-ui, sans-serif;
+  color: #e8f0f7;
+  background: #07111d;
+}
+* { box-sizing: border-box; }
+html, body, #app, .app-shell { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #07111d; }
+button, input { font: inherit; }
+.home {
+  min-height: 100%;
+  overflow: auto;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 30% 10%, #12304c 0, #07111d 42%, #050b12 100%);
+}
+.brand-row { max-width: 520px; margin: 12px auto 28px; display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 52px; height: 52px; border: 1px solid #2c6c91; border-radius: 15px;
+  display: grid; place-items: center; font-size: 30px; color: #65d3ff; background: #0a1b2a;
+}
+h1 { margin: 0; font-size: 28px; letter-spacing: .2px; }
+.brand-row p { margin: 4px 0 0; color: #8fa1b6; font-size: 14px; }
+.status-card, .open-card, .tips, .error-card {
+  max-width: 520px; margin: 0 auto 16px; border: 1px solid #23394c; border-radius: 18px;
+  background: rgba(10, 23, 36, .88); box-shadow: 0 16px 45px rgba(0, 0, 0, .22);
+}
+.status-card { display: flex; gap: 12px; padding: 15px 16px; align-items: flex-start; }
+.status-card .dot { width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; background: #e4ad4a; box-shadow: 0 0 12px currentColor; }
+.status-card.ready .dot { background: #44d889; }
+.status-card.failed .dot, .status-card.unsupported .dot { background: #ff6b68; }
+.status-card strong { font-size: 15px; }
+.status-card p { margin: 4px 0 0; color: #8fa1b6; font-size: 12px; line-height: 1.5; }
+.open-card { text-align: center; padding: 36px 24px; }
+.file-icon {
+  width: 74px; height: 74px; border: 1px solid #2c5671; border-radius: 22px; margin: 0 auto 20px;
+  display: grid; place-items: center; font-size: 40px; color: #5ed1ff; background: #0a1c2c;
+}
+.open-card h2 { margin: 0 0 8px; font-size: 24px; }
+.open-card > p { margin: 0 0 22px; color: #93a4b6; }
+.primary {
+  min-width: 220px; border: 1px solid #55cfff; border-radius: 13px; padding: 13px 20px;
+  color: #eafaff; background: #10334a; font-weight: 700;
+}
+.primary:active { transform: scale(.98); }
+.badges { margin-top: 18px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.badges span {
+  padding: 5px 10px; border-radius: 999px; background: #0c1b29; color: #7f93a7;
+  border: 1px solid #20374a; font-size: 11px;
+}
+.tips { padding: 16px 18px; }
+.tips strong { font-size: 14px; }
+.tips p { margin: 6px 0 0; color: #8fa1b6; font-size: 12px; line-height: 1.65; }
+.error-card {
+  padding: 14px 16px; border-color: #8a3e37; background: #291814; color: #ffaaa2;
+  font-size: 13px; line-height: 1.5;
+}
+.viewer-wrap { position: fixed; inset: 0; background: #05090e; }
+.back-btn {
+  position: fixed; z-index: 9999; left: max(10px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top));
+  border: 1px solid #355169; border-radius: 10px; padding: 8px 12px; color: #d8eaff;
+  background: rgba(6, 19, 31, .88); backdrop-filter: blur(10px);
+}
+.file-name {
+  position: fixed; z-index: 9998; left: 90px; right: 12px; top: max(15px, env(safe-area-inset-top));
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #90a3b5; font-size: 12px; pointer-events: none;
+}
+@media (max-width: 420px) {
+  .home { padding-left: 14px; padding-right: 14px; }
+  .open-card { padding: 30px 18px; }
+  .primary { width: 100%; min-width: 0; }
+}
