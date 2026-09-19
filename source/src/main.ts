@@ -37,6 +37,7 @@ async function prepareOffline() {
       './assets/mtext-renderer-worker.js',
       './assets/ios/ios-dwg-worker.js',
       './assets/ios/libredwg-lowmem.js',
+      './assets/ios/libredwg-runtime.js',
       './assets/ios/libredwg-web.wasm'
     ]
 
