@@ -3,6 +3,8 @@ name: Build LiteCAD for branch Pages
 on:
   push:
     branches: [main]
+    paths:
+      - 'source/**'
   workflow_dispatch:
 
 permissions:
