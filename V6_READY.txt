@@ -1,0 +1,2 @@
+LiteCAD v6 lightweight iPhone shell ready.
+Build head: 0c3be7a19b57b247ce618da6daecf228245af785
