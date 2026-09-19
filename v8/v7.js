@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = 'litecad-v7-20260919-2';
+  const VERSION = 'litecad-v8-20260919-2';
   const ENGINE_CACHE = VERSION + '-engine';
   const APP_CACHE = VERSION + '-app';
 
@@ -163,7 +163,7 @@
       await navigator.serviceWorker.register('./sw.js?v=' + encodeURIComponent(VERSION), { scope: './' });
       await navigator.serviceWorker.ready;
 
-      localStorage.setItem('litecad-v7-ready', VERSION);
+      localStorage.setItem('litecad-v8-ready', VERSION);
       barFill.style.width = '100%';
       progressText.textContent = '离线引擎已缓存完成。';
       engineText.textContent = '已完成。现在可以断网打开 LiteCAD v7。';
@@ -398,7 +398,7 @@
 
   updateZoom();
   clearLegacyState().finally(async () => {
-    if (localStorage.getItem('litecad-v7-ready') === VERSION && await engineReady()) {
+    if (localStorage.getItem('litecad-v8-ready') === VERSION && await engineReady()) {
       engineText.textContent = '离线引擎已缓存完成，可直接打开 DWG。';
       prepareBtn.textContent = '离线引擎已准备好';
     } else {

@@ -1,3 +1,5 @@
 LiteCAD v7 safe boot
 Build: 2026-09-19-1
 Startup: no WASM, no CAD viewer, no eager service-worker cache
+
+Canvas renderer build: v8 isolated scope
