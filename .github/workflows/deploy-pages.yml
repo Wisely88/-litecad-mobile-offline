@@ -49,6 +49,13 @@ jobs:
           cp public/assets/ios/libredwg-runtime.js dist/v7/engine/libredwg-runtime.js
           cp public/assets/ios/libredwg-web.wasm dist/v7/engine/libredwg-web.wasm
 
+          # Publish the Canvas renderer under a fresh /v8/ scope so iPhone
+          # cannot receive stale /v7/ Service Worker assets.
+          rm -rf dist/v8
+          cp -a dist/v7 dist/v8
+          sed -i 's/LiteCAD v7/LiteCAD v8/g' dist/v8/index.html dist/v8/manifest.webmanifest || true
+          sed -i 's/litecad-v7-/litecad-v8-/g; s/litecad-v7-ready/litecad-v8-ready/g' dist/v8/v7.js
+
       - name: Put production build at branch root
         shell: bash
         run: |
