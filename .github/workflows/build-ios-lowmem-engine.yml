@@ -63,7 +63,13 @@ jobs:
           )
           if old not in s:
               raise SystemExit("Expected LibreDWG memory flags were not found")
-          p.write_text(s.replace(old, new))
+          s = s.replace(old, new)
+          # Emscripten 6 requires the C++ linker for embind / RTTI symbols.
+          s = s.replace(
+              '"build:wasm": "cd ../../build-wasm && emcc ',
+              '"build:wasm": "cd ../../build-wasm && em++ '
+          )
+          p.write_text(s)
           PY
 
           pnpm build:prepare
