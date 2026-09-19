@@ -1,7 +1,7 @@
 {
   "name": "litecad-mobile-offline",
   "private": true,
-  "version": "4.1.0",
+  "version": "4.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,11 +10,16 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@mlightcad/cad-html-plugin": "^1.7.0",
+    "@mlightcad/cad-pdf-plugin": "^1.7.0",
     "@mlightcad/cad-simple-viewer": "^1.7.0",
+    "@mlightcad/cad-svg-plugin": "^1.7.0",
     "@mlightcad/cad-viewer": "^1.7.0",
     "@mlightcad/data-model": "^1.14.9",
     "@mlightcad/libredwg-converter": "^3.14.9",
     "@mlightcad/mtext-renderer": "^0.12.12",
+    "@mlightcad/pdf-renderer": "^1.7.0",
+    "@mlightcad/three-renderer": "^1.7.0",
     "@vueuse/core": "^11.1.0",
     "element-plus": "^2.12.0",
     "lodash-es": "4.17.21",
