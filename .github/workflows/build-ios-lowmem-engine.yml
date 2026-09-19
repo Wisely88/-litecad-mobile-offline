@@ -80,7 +80,12 @@ jobs:
 
           mkdir -p "$GITHUB_WORKSPACE/source/public/assets/ios"
           cp dist/libredwg-web.js "$GITHUB_WORKSPACE/source/public/assets/ios/libredwg-lowmem.js"
+          cp wasm/libredwg-web.js "$GITHUB_WORKSPACE/source/public/assets/ios/libredwg-runtime.js"
           cp wasm/libredwg-web.wasm "$GITHUB_WORKSPACE/source/public/assets/ios/libredwg-web.wasm"
+
+          # The wrapper's package build expects ../wasm/libredwg-web.js.
+          # For the standalone iOS bundle keep all runtime files together.
+          sed -i 's#../wasm/libredwg-web.js#./libredwg-runtime.js#g'             "$GITHUB_WORKSPACE/source/public/assets/ios/libredwg-lowmem.js"
 
           cat > "$GITHUB_WORKSPACE/source/public/assets/ios/ENGINE_BUILD.txt" <<'TXT'
           LiteCAD iOS low-memory LibreDWG engine
@@ -102,6 +107,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add source/public/assets/ios/libredwg-lowmem.js
+          git add source/public/assets/ios/libredwg-runtime.js
           git add source/public/assets/ios/libredwg-web.wasm
           git add source/public/assets/ios/ENGINE_BUILD.txt
           if git diff --cached --quiet; then
