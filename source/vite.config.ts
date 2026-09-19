@@ -38,17 +38,15 @@ export default defineConfig({
   plugins: [vue(), copyCadRuntime()],
   build: {
     outDir: 'dist',
-    modulePreload: false,
-    cssCodeSplit: false,
+    modulePreload: true,
+    cssCodeSplit: true,
+    sourcemap: false,
     rollupOptions: {
       input: 'index.html',
       output: {
-        inlineDynamicImports: true,
-        entryFileNames: 'assets/app.js',
-        assetFileNames: assetInfo => {
-          if ((assetInfo.name || '').endsWith('.css')) return 'assets/app.css'
-          return 'assets/[name][extname]'
-        }
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]'
       }
     }
   }
