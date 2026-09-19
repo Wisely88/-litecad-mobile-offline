@@ -60,7 +60,11 @@ jobs:
             done
           fi
 
-          find . -mindepth 1 -maxdepth 1             ! -name .git             ! -name .github             ! -name source             -exec rm -rf {} +
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name .git \
+            ! -name .github \
+            ! -name source \
+            -exec rm -rf {} +
 
           if [ "$APP_DIR" = "." ]; then
             rm -rf source
@@ -70,15 +74,14 @@ jobs:
 
           cp -a "$RUNNER_TEMP/litecad-dist/." .
 
-          # Keep build-only dependencies out of the published branch.
           rm -rf source/node_modules source/dist
 
           touch .nojekyll
           cat > _config.yml <<'YAML'
-exclude:
-  - source
-  - .github
-YAML
+          exclude:
+            - source
+            - .github
+          YAML
           printf '%s\n' "Built automatically from source/ by GitHub Actions." > BUILD_INFO.txt
 
       - name: Commit production build
