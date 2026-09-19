@@ -1,0 +1,23 @@
+name: Cleanup stale Pages artifact
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-pages-artifact.yml'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete stale github-pages artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method DELETE             /repos/Wisely88/-litecad-mobile-offline/actions/artifacts/10581610879
+          echo "Deleted stale artifact 10581610879"
