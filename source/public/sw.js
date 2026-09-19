@@ -11,6 +11,7 @@ const CORE = [
   './assets/libredwg-web.wasm',
   './assets/ios/ios-dwg-worker.js',
   './assets/ios/libredwg-lowmem.js',
+  './assets/ios/libredwg-runtime.js',
   './assets/ios/libredwg-web.wasm'
 ]
 
