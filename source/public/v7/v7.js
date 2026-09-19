@@ -91,8 +91,12 @@
   async function clearLegacyState() {
     try {
       const regs = await navigator.serviceWorker?.getRegistrations?.() || [];
+      const ownScope = new URL('./', location.href).href;
       for (const reg of regs) {
-        if (reg.scope.includes('/-litecad-mobile-offline/') && !reg.scope.includes('/v7/')) {
+        if (
+          reg.scope.includes('/-litecad-mobile-offline/') &&
+          reg.scope !== ownScope
+        ) {
           await reg.unregister();
         }
       }
