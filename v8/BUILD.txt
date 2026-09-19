@@ -5,3 +5,5 @@ Startup: no WASM, no CAD viewer, no eager service-worker cache
 Canvas renderer build: v8 isolated scope
 
 Block-instanced interactive renderer: v9
+
+Model-space-first referenced-block build: v10

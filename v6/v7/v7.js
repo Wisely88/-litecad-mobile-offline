@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = 'litecad-v9-20260919-1';
+  const VERSION = 'litecad-v10-20260919-1';
   const ENGINE_CACHE = VERSION + '-engine';
   const APP_CACHE = VERSION + '-app';
   const MAX_RENDER_DEPTH = 12;
@@ -533,7 +533,7 @@
       );
       await navigator.serviceWorker.ready;
 
-      localStorage.setItem('litecad-v9-ready', VERSION);
+      localStorage.setItem('litecad-v10-ready', VERSION);
       barFill.style.width = '100%';
       progressText.textContent = '离线引擎已缓存完成。';
       engineText.textContent = '已完成。现在可以断网打开 LiteCAD。';
@@ -555,7 +555,8 @@
       'engine-ready': '引擎已就绪，正在读取 DWG…',
       'dwg-read': 'DWG 已读取，正在解析实体…',
       'converted': '实体已解析，正在建立块实例场景…',
-      'definitions': '正在读取块定义…',
+      'model-first': '正在优先解析模型空间…',
+      'definitions': '正在读取实际引用的块…',
       'scene-ready': '场景已建立，正在传输图元…'
     };
 
@@ -900,7 +901,7 @@
 
   clearLegacyState().finally(async () => {
     if (
-      localStorage.getItem('litecad-v9-ready') === VERSION &&
+      localStorage.getItem('litecad-v10-ready') === VERSION &&
       await engineReady()
     ) {
       engineText.textContent = '离线引擎已缓存完成，可直接打开 DWG。';
