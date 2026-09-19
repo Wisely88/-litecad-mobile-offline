@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = 'litecad-v7-20260919-1';
+  const VERSION = 'litecad-v7-20260919-2';
   const ENGINE_CACHE = VERSION + '-engine';
   const APP_CACHE = VERSION + '-app';
 
@@ -22,7 +22,8 @@
   const messageTitle = $('messageTitle');
   const messageText = $('messageText');
   const spinner = $('spinner');
-  const svgImage = $('svgImage');
+  const canvas = $('cadCanvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
   const zoomOut = $('zoomOut');
   const zoomIn = $('zoomIn');
   const fitBtn = $('fitBtn');
@@ -30,8 +31,11 @@
 
   let worker = null;
   let workerTimer = null;
-  let svgUrl = '';
-  let scale = 1;
+  let zoom = 1;
+  let bbox = null;
+  let segmentBatches = [];
+  let renderToken = 0;
+  let currentName = '';
 
   const engineFiles = [
     './engine/ios-dwg-worker.js',
@@ -46,10 +50,9 @@
   }
 
   function updateZoom() {
-    zoomValue.textContent = Math.round(scale * 100) + '%';
-    svgImage.style.width = (scale * 100) + '%';
-    zoomOut.disabled = scale <= 0.5;
-    zoomIn.disabled = scale >= 4;
+    zoomValue.textContent = Math.round(zoom * 100) + '%';
+    zoomOut.disabled = zoom <= 0.5;
+    zoomIn.disabled = zoom >= 4;
   }
 
   function cleanupWorker() {
@@ -65,13 +68,14 @@
 
   function cleanupDrawing() {
     cleanupWorker();
-    if (svgUrl) {
-      URL.revokeObjectURL(svgUrl);
-      svgUrl = '';
-    }
-    svgImage.removeAttribute('src');
-    svgImage.hidden = true;
-    scale = 1;
+    renderToken++;
+    segmentBatches = [];
+    bbox = null;
+    currentName = '';
+    canvas.hidden = true;
+    const c = canvas.getContext('2d');
+    if (c) c.clearRect(0, 0, canvas.width, canvas.height);
+    zoom = 1;
     updateZoom();
   }
 
@@ -81,7 +85,7 @@
     spinner.hidden = !!isError;
     messageTitle.textContent = title;
     messageText.textContent = text || '';
-    svgImage.hidden = true;
+    canvas.hidden = true;
   }
 
   async function clearLegacyState() {
@@ -152,13 +156,13 @@
       }
 
       progressText.textContent = '正在启用离线 Service Worker…';
-      const reg = await navigator.serviceWorker.register('./sw.js?v=' + encodeURIComponent(VERSION), { scope: './' });
+      await navigator.serviceWorker.register('./sw.js?v=' + encodeURIComponent(VERSION), { scope: './' });
       await navigator.serviceWorker.ready;
 
       localStorage.setItem('litecad-v7-ready', VERSION);
       barFill.style.width = '100%';
       progressText.textContent = '离线引擎已缓存完成。';
-      engineText.textContent = '已完成。现在可以关闭网络后再打开 LiteCAD v7。';
+      engineText.textContent = '已完成。现在可以断网打开 LiteCAD v7。';
       prepareBtn.textContent = '离线引擎已准备好';
     } catch (error) {
       setError('离线引擎准备失败：' + (error && error.message ? error.message : String(error)));
@@ -173,9 +177,93 @@
       'engine-loading': '正在载入低内存 LibreDWG…',
       'engine-ready': '引擎已就绪，正在读取 DWG…',
       'dwg-read': 'DWG 已读取，正在解析实体…',
-      'converted': '实体已解析，正在生成 SVG…'
+      'converted': '实体已解析，正在提取轻量几何…',
+      'geometry-scan': '正在扫描模型空间几何…',
+      'geometry': '正在展开块和线段…'
     };
     return map[stage] || '正在解析 DWG…';
+  }
+
+  function setCanvasSize() {
+    const stage = $('stage');
+    const rect = stage.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.floor(rect.width));
+    const h = Math.max(1, Math.floor(rect.height));
+    const pw = Math.max(1, Math.floor(w * dpr));
+    const ph = Math.max(1, Math.floor(h * dpr));
+
+    if (canvas.width !== pw || canvas.height !== ph) {
+      canvas.width = pw;
+      canvas.height = ph;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+    }
+    return { w, h, dpr };
+  }
+
+  function drawBatch(batch, transform) {
+    const c = ctx;
+    if (!c) return;
+    c.save();
+    c.setTransform(
+      transform.s * transform.dpr,
+      0,
+      0,
+      -transform.s * transform.dpr,
+      transform.tx * transform.dpr,
+      transform.ty * transform.dpr
+    );
+    c.strokeStyle = '#8fdfff';
+    c.lineWidth = 1 / Math.max(transform.s * transform.dpr, 0.000001);
+    c.beginPath();
+
+    for (let i = 0; i + 3 < batch.length; i += 4) {
+      c.moveTo(batch[i], batch[i + 1]);
+      c.lineTo(batch[i + 2], batch[i + 3]);
+    }
+    c.stroke();
+    c.restore();
+  }
+
+  function redraw() {
+    if (!bbox || !segmentBatches.length || !ctx) return;
+    const token = ++renderToken;
+    const { w, h, dpr } = setCanvasSize();
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#020609';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const bw = Math.max(1e-9, bbox.maxX - bbox.minX);
+    const bh = Math.max(1e-9, bbox.maxY - bbox.minY);
+    const pad = 18;
+    const fit = Math.max(1e-9, Math.min((w - pad * 2) / bw, (h - pad * 2) / bh));
+    const s = fit * zoom;
+    const drawnW = bw * s;
+    const drawnH = bh * s;
+    const left = (w - drawnW) / 2;
+    const top = (h - drawnH) / 2;
+
+    const transform = {
+      s,
+      dpr,
+      tx: left - bbox.minX * s,
+      ty: top + bbox.maxY * s
+    };
+
+    let index = 0;
+    const drawFrame = () => {
+      if (token !== renderToken) return;
+      const end = Math.min(index + 5, segmentBatches.length);
+      for (; index < end; index++) {
+        drawBatch(segmentBatches[index], transform);
+      }
+      if (index < segmentBatches.length) {
+        requestAnimationFrame(drawFrame);
+      }
+    };
+    requestAnimationFrame(drawFrame);
   }
 
   async function openDwg(file) {
@@ -185,33 +273,55 @@
     }
 
     setError('');
+    cleanupDrawing();
+    currentName = file.name;
     home.hidden = true;
     viewer.hidden = false;
     fileName.textContent = file.name;
-    showMessage('准备读取 DWG…', '文件只在手机本机处理。', false);
+    showMessage('准备读取 DWG…', '这次不再生成 SVG，解析后直接输出轻量线段给 Canvas。', false);
 
     try {
       const buffer = await file.arrayBuffer();
-      worker = new Worker('./engine/ios-dwg-worker.js', { type: 'module' });
+      worker = new Worker('./engine/ios-dwg-worker.js?v=' + encodeURIComponent(VERSION), { type: 'module' });
 
       worker.onmessage = event => {
         const data = event.data || {};
+
         if (data.type === 'progress') {
           showMessage(progressLabel(String(data.stage || '')), data.detail ? String(data.detail) : '', false);
           return;
         }
-        if (data.ok && typeof data.svg === 'string' && data.svg.length) {
-          svgUrl = URL.createObjectURL(new Blob([data.svg], { type: 'image/svg+xml' }));
-          svgImage.src = svgUrl;
-          svgImage.hidden = false;
-          message.hidden = true;
-          scale = 1;
-          updateZoom();
-          cleanupWorker();
+
+        if (data.type === 'segments' && data.buffer instanceof ArrayBuffer) {
+          segmentBatches.push(new Float32Array(data.buffer));
+          const total = segmentBatches.reduce((sum, batch) => sum + batch.length / 4, 0);
+          showMessage('正在接收轻量几何…', '已接收约 ' + total.toLocaleString() + ' 条线段', false);
           return;
         }
-        showMessage('DWG 解析失败', String(data.error || 'Worker 返回失败。'), true);
-        cleanupWorker();
+
+        if (data.type === 'done' && data.ok && data.bbox) {
+          bbox = data.bbox;
+          cleanupWorker();
+          message.hidden = true;
+          canvas.hidden = false;
+          zoom = 1;
+          updateZoom();
+
+          const notes = [];
+          notes.push((data.segments || 0).toLocaleString() + ' 条线段');
+          notes.push((data.entities || 0).toLocaleString() + ' 个实体');
+          if (data.skipped) notes.push('跳过 ' + Number(data.skipped).toLocaleString() + ' 个重型/暂不支持实体');
+          if (data.truncated) notes.push('为保护内存已限制到 150 万线段');
+          fileName.textContent = currentName + ' · ' + notes.join(' · ');
+
+          redraw();
+          return;
+        }
+
+        if (data.ok === false) {
+          showMessage('DWG 解析失败', String(data.error || 'Worker 返回失败。'), true);
+          cleanupWorker();
+        }
       };
 
       worker.onerror = event => {
@@ -225,9 +335,9 @@
       };
 
       workerTimer = setTimeout(() => {
-        showMessage('DWG 解析超时', '超过 180 秒，已停止 Worker。', true);
+        showMessage('DWG 解析超时', '超过 240 秒，已停止 Worker。', true);
         cleanupWorker();
-      }, 180000);
+      }, 240000);
 
       worker.postMessage({ buffer }, [buffer]);
     } catch (error) {
@@ -238,14 +348,16 @@
 
   prepareBtn.onclick = prepareOffline;
   openBtn.onclick = () => fileInput.click();
+
   fileInput.onchange = () => {
     const file = fileInput.files && fileInput.files[0];
     if (!file) return;
     const ext = (file.name.split('.').pop() || '').toLowerCase();
+
     if (ext === 'dwg') {
       openDwg(file);
     } else if (ext === 'dxf') {
-      setError('v7 安全启动版先只验证 DWG。DXF 不受这个 Safari 启动问题影响，后续再接回。');
+      setError('v7 当前先稳定 DWG 大图路径；DXF 会在 DWG 稳定后接回同一 Canvas。');
     } else {
       setError('请选择 .dwg 或 .dxf 文件。');
     }
@@ -257,15 +369,36 @@
     viewer.hidden = true;
     home.hidden = false;
   };
-  zoomOut.onclick = () => { scale = Math.max(.5, scale - .25); updateZoom(); };
-  zoomIn.onclick = () => { scale = Math.min(4, scale + .25); updateZoom(); };
-  fitBtn.onclick = () => { scale = 1; updateZoom(); };
+
+  zoomOut.onclick = () => {
+    zoom = Math.max(0.5, Math.round((zoom - 0.25) * 100) / 100);
+    updateZoom();
+    redraw();
+  };
+
+  zoomIn.onclick = () => {
+    zoom = Math.min(4, Math.round((zoom + 0.25) * 100) / 100);
+    updateZoom();
+    redraw();
+  };
+
+  fitBtn.onclick = () => {
+    zoom = 1;
+    updateZoom();
+    redraw();
+  };
+
+  window.addEventListener('resize', () => {
+    if (!canvas.hidden && bbox) redraw();
+  });
 
   updateZoom();
   clearLegacyState().finally(async () => {
     if (localStorage.getItem('litecad-v7-ready') === VERSION && await engineReady()) {
       engineText.textContent = '离线引擎已缓存完成，可直接打开 DWG。';
       prepareBtn.textContent = '离线引擎已准备好';
+    } else {
+      prepareBtn.disabled = false;
     }
   });
 })();
