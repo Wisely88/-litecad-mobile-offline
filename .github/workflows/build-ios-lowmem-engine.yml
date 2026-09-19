@@ -115,4 +115,5 @@ jobs:
             exit 0
           fi
           git commit -m "Add iOS low-memory LibreDWG engine"
+          git pull --rebase origin main
           git push origin HEAD:main
