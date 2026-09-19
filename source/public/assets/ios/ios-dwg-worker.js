@@ -3,6 +3,10 @@ import { Dwg_File_Type, LibreDwg } from './libredwg-lowmem.js'
 let engine = null
 let dwg = null
 
+function progress(stage, detail = '') {
+  self.postMessage({ type: 'progress', stage, detail })
+}
+
 function fail(error) {
   const message = error instanceof Error ? error.message : String(error)
   self.postMessage({ ok: false, error: message })
@@ -17,18 +21,22 @@ self.onmessage = async event => {
   }
 
   try {
+    progress('worker-start')
     const base = new URL('./', import.meta.url).href.replace(/\/$/, '')
+
+    progress('engine-loading')
     engine = await LibreDwg.create(base)
+    progress('engine-ready')
+
     dwg = engine.dwg_read_data(buffer, Dwg_File_Type.DWG)
     if (!dwg) throw new Error('LibreDWG 无法读取这个 DWG。')
+    progress('dwg-read')
 
-    // Convert only inside this worker. The large CAD object tree never crosses
-    // back to Safari's main thread.
     const database = engine.convert(dwg)
 
-    // Free native/C-side DWG memory before SVG generation.
     engine.dwg_free(dwg)
     dwg = null
+    progress('converted')
 
     const svg = engine.dwg_to_svg(database)
     if (!svg || typeof svg !== 'string') {
