@@ -1,78 +1,35 @@
-const CACHE = 'litecad-v6-shell-20260919'
-const SHELL = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './icon.svg',
-  './assets/ios/ios-dwg-worker.js',
-  './assets/ios/libredwg-lowmem.js',
-  './assets/ios/libredwg-runtime.js',
-  './assets/ios/libredwg-web.wasm'
-]
+const PREFIXES = ['litecad-', 'litecad-mobile-', 'litecad-v6-', 'litecad-v7-'];
 
 self.addEventListener('install', event => {
-  self.skipWaiting()
-  event.waitUntil((async () => {
-    const cache = await caches.open(CACHE)
-    for (const url of SHELL) {
-      try {
-        await cache.add(new Request(url, { cache: 'reload' }))
-      } catch (error) {
-        console.warn('[LiteCAD v6 SW] cache miss', url, error)
-      }
-    }
-  })())
-})
+  self.skipWaiting();
+});
 
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
-    const keys = await caches.keys()
-    await Promise.all(
-      keys
-        .filter(key =>
-          (key.startsWith('litecad-mobile-') || key.startsWith('litecad-v6-')) &&
-          key !== CACHE &&
-          key !== 'litecad-v6-runtime-20260919'
-        )
-        .map(key => caches.delete(key))
-    )
-    await self.clients.claim()
-  })())
-})
+    try {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter(key => PREFIXES.some(prefix => key.startsWith(prefix)))
+          .map(key => caches.delete(key))
+      );
+    } catch {}
 
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return
+    try {
+      await self.registration.unregister();
+    } catch {}
 
-  const url = new URL(event.request.url)
-  if (url.origin !== self.location.origin) return
-
-  if (event.request.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        const fresh = await fetch(event.request)
-        const cache = await caches.open(CACHE)
-        if (fresh.ok) await cache.put(event.request, fresh.clone())
-        return fresh
-      } catch {
-        return (
-          (await caches.match(event.request, { ignoreSearch: true })) ||
-          (await caches.match('./index.html')) ||
-          Response.error()
-        )
+    try {
+      const clients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true
+      });
+      for (const client of clients) {
+        try { client.navigate(client.url); } catch {}
       }
-    })())
-    return
-  }
+    } catch {}
+  })());
+});
 
-  event.respondWith((async () => {
-    const cached = await caches.match(event.request, { ignoreSearch: true })
-    if (cached) return cached
-
-    const response = await fetch(event.request)
-    if (response && response.ok) {
-      const cache = await caches.open(CACHE)
-      await cache.put(event.request, response.clone())
-    }
-    return response
-  })())
-})
+// Intentionally NO fetch handler.
+// This worker only exists to retire all earlier LiteCAD service workers.
