@@ -68,3 +68,82 @@ h1 { margin: 0; font-size: 28px; letter-spacing: .2px; }
   .open-card { padding: 30px 18px; }
   .primary { width: 100%; min-width: 0; }
 }
+
+
+.ios-dwg-viewer {
+  position: absolute;
+  inset: 0;
+  padding-top: max(52px, calc(env(safe-area-inset-top) + 42px));
+  background: #05090e;
+}
+.ios-dwg-tools {
+  position: absolute;
+  z-index: 30;
+  top: max(50px, calc(env(safe-area-inset-top) + 40px));
+  right: max(10px, env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid #2a4054;
+  border-radius: 12px;
+  background: rgba(7, 17, 29, .9);
+  backdrop-filter: blur(12px);
+}
+.ios-dwg-tools button {
+  min-width: 36px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #355169;
+  border-radius: 8px;
+  color: #dcefff;
+  background: #0d2233;
+}
+.ios-dwg-tools button:disabled {
+  opacity: .35;
+}
+.ios-dwg-tools span {
+  min-width: 52px;
+  text-align: center;
+  color: #8fb0c8;
+  font-size: 12px;
+}
+.ios-dwg-stage {
+  position: absolute;
+  inset: max(94px, calc(env(safe-area-inset-top) + 84px)) 0 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #020609;
+}
+.ios-dwg-image {
+  display: block;
+  height: auto;
+  min-width: 1px;
+  background: #020609;
+}
+.ios-dwg-message {
+  min-height: 100%;
+  padding: 32px 26px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  color: #dcefff;
+}
+.ios-dwg-message p {
+  max-width: 360px;
+  color: #8fa5b8;
+  line-height: 1.6;
+  font-size: 13px;
+}
+.ios-dwg-message.error strong { color: #ff958c; }
+.spinner {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 18px;
+  border: 3px solid #24455d;
+  border-top-color: #63d6ff;
+  border-radius: 50%;
+  animation: litecad-spin .8s linear infinite;
+}
+@keyframes litecad-spin { to { transform: rotate(360deg); } }
