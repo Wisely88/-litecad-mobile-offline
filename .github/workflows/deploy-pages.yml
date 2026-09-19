@@ -74,6 +74,12 @@ jobs:
 
           cp -a "$RUNNER_TEMP/litecad-dist/." .
 
+          # Publish the same build under /v6/ so iPhone can escape any stale
+          # root-scope Service Worker/cache from earlier experimental versions.
+          rm -rf v6
+          mkdir -p v6
+          cp -a "$RUNNER_TEMP/litecad-dist/." v6/
+
           rm -rf source/node_modules source/dist
 
           touch .nojekyll
